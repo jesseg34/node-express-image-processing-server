@@ -11,22 +11,20 @@ const uploadPathResolver = (filename) => {
 const imageProcessor = (filename) => {
   const sourcePath = uploadPathResolver(filename);
   const resizeDestination = uploadPathResolver("resized-" + filename);
-  const monochromeDestination = uploadPathResolver("monochrome" + filename);
+  const monochromeDestination = uploadPathResolver("monochrome-" + filename);
   let resizeWorkerFinished = false;
   let monochromeWorkerFinished = false;
 
   return new Promise((resolve, reject) => {
-    if (!isMainThread) {
-      reject(new Error("not on main thread"));
-    } else {
+    if (isMainThread) {
       try {
-        const resizeWorker = Worker(pathToResizeWorker, {
+        const resizeWorker = new Worker(pathToResizeWorker, {
           workerData: {
             source: sourcePath,
             destination: resizeDestination,
           },
         });
-        const monochromeWorker = Worker(pathToMonochromeWorker, {
+        const monochromeWorker = new Worker(pathToMonochromeWorker, {
           workerData: {
             source: sourcePath,
             destination: monochromeDestination,
@@ -57,6 +55,8 @@ const imageProcessor = (filename) => {
       } catch (error) {
         reject(error);
       }
+    } else {
+      reject(new Error("not on main thread"));
     }
   });
 };
